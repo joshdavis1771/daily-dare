@@ -44,6 +44,7 @@ beforeAll(async () => {
   await db.exec(first);
   await db.exec(readFileSync("supabase/migrations/002_daily_notifications.sql", "utf8"));
   await db.exec(readFileSync("supabase/migrations/003_photo_proofs.sql", "utf8"));
+  await db.exec(readFileSync("supabase/migrations/004_protect_post_writes.sql", "utf8"));
   await db.exec(`
     grant usage on schema public, auth, storage to authenticated, anon;
     grant select,insert,update,delete on all tables in schema public to authenticated;
@@ -61,6 +62,37 @@ beforeEach(async () => {
 });
 
 describe("daily database lifecycle", () => {
+  it("rejects direct post creation even when the client has table grants", async () => {
+    await db.exec("set role authenticated");
+    await expect(db.query(`insert into posts(user_id, challenge_id, video_path)
+      values ($1, '33333333-3333-4333-8333-333333333333', 'nonexistent.mp4')`, [user]))
+      .rejects.toThrow("row-level security");
+    expect((await db.query("select * from posts")).rows).toHaveLength(0);
+  });
+  it("allows authenticated RPC completion but prevents proof replacement and duplication", async () => {
+    await openToday();
+    const path = await upload("jpg", "image/jpeg");
+    await db.exec("set role authenticated");
+    await complete(path);
+    await complete(path);
+    expect((await status()).streak).toBe(1);
+    const changed = await db.query("update posts set video_path = 'nonexistent.mp4' returning *");
+    expect(changed.rows).toHaveLength(0);
+    expect((await db.query("select video_path from posts")).rows).toEqual([{ video_path: path }]);
+  });
+  it("allows only the owner to delete proof without resetting completion", async () => {
+    await openToday();
+    const path = await upload();
+    await db.exec("set role authenticated");
+    await complete(path);
+    await db.query("select set_config('request.jwt.claim.sub',$1,false)", [otherUser]);
+    expect((await db.query("delete from posts returning id")).rows).toHaveLength(0);
+    await db.query("select set_config('request.jwt.claim.sub',$1,false)", [user]);
+    expect((await db.query("delete from posts returning id")).rows).toHaveLength(1);
+    await complete(path);
+    expect((await db.query("select * from posts")).rows).toHaveLength(0);
+    expect((await status()).streak).toBe(1);
+  });
   it("persists one schedule and timezone across reloads and devices", async () => {
     const first = await status();
     const second = await status("Pacific/Auckland");

@@ -1,0 +1,18 @@
+{
+  "/api/cron/daily/route": "app/api/cron/daily/route.js",
+  "/api/plus/suggestions/route": "app/api/plus/suggestions/route.js",
+  "/api/push/route": "app/api/push/route.js",
+  "/archive/page": "app/archive/page.js",
+  "/auth/page": "app/auth/page.js",
+  "/create/page": "app/create/page.js",
+  "/guidelines/page": "app/guidelines/page.js",
+  "/manifest.webmanifest/route": "app/manifest.webmanifest/route.js",
+  "/messages/page": "app/messages/page.js",
+  "/notifications/page": "app/notifications/page.js",
+  "/page": "app/page.js",
+  "/plus/page": "app/plus/page.js",
+  "/profile/page": "app/profile/page.js",
+  "/search/page": "app/search/page.js",
+  "/settings/page": "app/settings/page.js",
+  "/terms/page": "app/terms/page.js"
+}
