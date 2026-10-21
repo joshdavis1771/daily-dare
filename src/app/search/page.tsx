@@ -7,11 +7,14 @@ import { Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { demoProfiles } from "@/lib/demo-data";
 
+import { isBlocked, useModeration } from "@/lib/moderation";
+
 export default function SearchPage() {
+  const { blocks } = useModeration();
   const [query, setQuery] = useState("");
   const normalizedQuery = query.replace(/^@/, "").toLowerCase();
   const results = demoProfiles.filter((profile) =>
-    `${profile.username} ${profile.displayName}`
+    !isBlocked(blocks, profile.id) && `${profile.username} ${profile.displayName}`
       .toLowerCase()
       .includes(normalizedQuery),
   );

@@ -8,6 +8,10 @@ import { AppShell } from "@/components/app-shell";
 import { demoMessages } from "@/lib/demo-data";
 import type { DirectMessage } from "@/lib/types";
 
+import { isBlocked, useModeration } from "@/lib/moderation";
+import { SafetyControls } from "@/components/safety-controls";
+import { demoProfiles } from "@/lib/demo-data";
+
 const sharedMessagesKey = "daily-dare-shared-messages-v1";
 const reactionOptions = ["❤️", "😂", "👏", "✨"] as const;
 
@@ -32,11 +36,13 @@ function loadThreads() {
 }
 
 export default function MessagesPage() {
+  const { blocks } = useModeration();
   const [selectedId, setSelectedId] = useState("");
   const [draft, setDraft] = useState("");
   const [threads, setThreads] = useState(demoMessages);
   const [reactions, setReactions] = useState<Record<string, string[]>>({});
-  const selectedThread = threads.find((thread) => thread.id === selectedId);
+  const visibleThreads = threads.filter(thread => !isBlocked(blocks, thread.username));
+  const selectedThread = visibleThreads.find((thread) => thread.id === selectedId);
 
   useEffect(() => {
     startTransition(() => setThreads(loadThreads()));
@@ -49,7 +55,7 @@ export default function MessagesPage() {
   function sendMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const body = draft.trim();
-    if (!body) return;
+    if (!body || !selectedThread) return;
     setThreads((current) =>
       current.map((thread) =>
         thread.id === selectedId
@@ -96,7 +102,7 @@ export default function MessagesPage() {
               </p>
             </div>
             <div className="p-2">
-              {threads.map((thread) => (
+              {visibleThreads.map((thread) => (
                 <button
                   type="button"
                   key={thread.id}
@@ -154,6 +160,7 @@ export default function MessagesPage() {
                   </span>
                 </span>
               </div>
+              <div className="px-5"><SafetyControls target={{ userId: demoProfiles.find(profile => profile.username === selectedThread.username)?.id ?? selectedThread.id, username: selectedThread.username }} /></div>
               <div className="flex min-h-[24rem] flex-col justify-end gap-3 p-5">
                 {selectedThread.messages.map((message, index) => (
                   <div
@@ -161,7 +168,7 @@ export default function MessagesPage() {
                     className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${message.fromMe ? "self-end rounded-br-sm bg-teal-700 text-white" : "rounded-bl-sm bg-neutral-100 text-neutral-800 dark:bg-neutral-700 dark:text-neutral-100"}`}
                   >
                     <p>{message.body}</p>
-                    {message.sharedPost && (
+                    {message.sharedPost && !isBlocked(blocks, message.sharedPost.creatorUsername) && (
                       <Link
                         href={message.sharedPost.profileUrl}
                         className="mt-3 block overflow-hidden rounded-2xl bg-white/15 text-left outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-teal-300"

@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 46, "column": 0}, "map": {"version":3,"sources":["file:///Users/josh/GitHub/daily-dare/src/components/pwa-register.tsx"],"sourcesContent":["\"use client\";\n\nimport { useEffect } from \"react\";\n\nexport function PwaRegister() {\n  useEffect(() => {\n    if (!(\"serviceWorker\" in navigator)) return;\n    void navigator.serviceWorker.register(\"/sw.js\", {\n      scope: \"/\",\n      updateViaCache: \"none\",\n    });\n  }, []);\n\n  return null;\n}\n"],"names":["PwaRegister","navigator","serviceWorker","register","scope","updateViaCache"],"mappings":";;;;AAEA;AAFA;;AAIO,SAASA;IACd,IAAA,kNAAS,EAAC;QACR,IAAI,CAAC,CAAC,mBAAmBC,SAAS,GAAG;QACrC,KAAKA,UAAUC,aAAa,CAACC,QAAQ,CAAC,UAAU;YAC9CC,OAAO;YACPC,gBAAgB;QAClB;IACF,GAAG,EAAE;IAEL,OAAO;AACT"}}]
-}

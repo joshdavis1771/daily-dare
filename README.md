@@ -51,3 +51,7 @@ docs/             Product, architecture, setup, data, testing, and implementatio
 - Capture uses the native camera on supported phones and falls back to a file picker on desktop. In-browser desktop recording is not implemented.
 - Audio mixing is not implemented. Secure server-side FFmpeg processing, licensing, moderation review, transcoding, signed media URLs, and abuse controls are required before public launch.
 - Demo avatars and video posters use remote placeholder assets and are intentionally not production media.
+
+## Signup pack preferences
+
+New users choose and confirm exactly three packs before creating an account. Choices are stored in Supabase auth user metadata; daily assignments use only those categories. Apply `supabase/migrations/006_pack_preferences.sql` after migrations 001–005 to seed pack challenges and enable filtering for live accounts. Existing accounts without pack choices keep the existing challenge selection. In demo mode, confirmed choices are saved on this device and personalize the daily dare without creating an account.

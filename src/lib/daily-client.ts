@@ -1,3 +1,4 @@
+import { readPackPreferences, challengeFromPacks } from "./pack-preferences";
 import { supabase } from "./supabase";
 import { currentStreak, dailyPhase, demoSchedule, localDate, type DailyState } from "./daily";
 import { getDailyChallengeForUser } from "./demo-data";
@@ -50,6 +51,8 @@ export async function getDailyState(): Promise<DailyState> {
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     challenge: getDailyChallengeForUser("p1"),
   };
+  const selectedPacks = readPackPreferences();
+  if (selectedPacks && !day.completedAt && !day.skippedAt) day.challenge = challengeFromPacks(selectedPacks, day.date);
   day.streak = currentStreak(Object.values(history.days).filter((item) => item.completedAt || item.skippedAt).map((item) => item.date), day.date);
   history.days[day.date] = day;
   localStorage.setItem(KEY, JSON.stringify(history));

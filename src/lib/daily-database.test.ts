@@ -45,6 +45,7 @@ beforeAll(async () => {
   await db.exec(readFileSync("supabase/migrations/002_daily_notifications.sql", "utf8"));
   await db.exec(readFileSync("supabase/migrations/003_photo_proofs.sql", "utf8"));
   await db.exec(readFileSync("supabase/migrations/004_protect_post_writes.sql", "utf8"));
+  await db.exec(readFileSync("supabase/migrations/006_pack_preferences.sql", "utf8"));
   await db.exec(`
     grant usage on schema public, auth, storage to authenticated, anon;
     grant select,insert,update,delete on all tables in schema public to authenticated;
@@ -56,12 +57,25 @@ beforeAll(async () => {
 
 afterAll(async () => { await db?.close(); });
 beforeEach(async () => {
-  await db.exec("reset role; truncate dare_days, daily_preferences, push_subscriptions, posts cascade; truncate storage.objects;");
+  await db.exec("reset role; update auth.users set raw_user_meta_data = '{}'; truncate dare_days, daily_preferences, push_subscriptions, posts cascade; truncate storage.objects;");
   await db.query("select set_config('request.jwt.claim.sub',$1,false)", [user]);
   today = (await status()).date;
 });
 
 describe("daily database lifecycle", () => {
+  it("only assigns challenges from confirmed signup packs", async () => {
+    await db.query("update auth.users set raw_user_meta_data = $1::jsonb where id = $2", [JSON.stringify({ selected_packs: ["food", "home", "learning"] }), user]);
+    await db.query("delete from dare_days where user_id = $1", [user]);
+    const day = await status();
+    const result = await db.query<{ category: string }>("select category from challenges where id = $1", [day.challenge.id]);
+    expect(["food", "home", "learning"]).toContain(result.rows[0].category);
+    expect((await status()).challenge.id).toBe(day.challenge.id);
+  });
+  it("rejects invalid signup pack selections instead of assigning another category", async () => {
+    await db.query("update auth.users set raw_user_meta_data = $1::jsonb where id = $2", [JSON.stringify({ selected_packs: ["food", "food", "home"] }), user]);
+    await db.query("delete from dare_days where user_id = $1", [user]);
+    await expect(status()).rejects.toThrow("three valid packs");
+  });
   it("rejects direct post creation even when the client has table grants", async () => {
     await db.exec("set role authenticated");
     await expect(db.query(`insert into posts(user_id, challenge_id, video_path)

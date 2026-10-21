@@ -7,6 +7,8 @@ import { ArrowLeft, Bell, Heart } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { markNotificationRead, markNotificationsRead, notificationsEvent, readNotifications, type AppNotification } from "@/lib/notifications";
 
+import { isBlocked, useModeration } from "@/lib/moderation";
+
 function NotificationItem({ notification }: { notification: AppNotification }) {
   const href = notification.postId
     ? `/profile?post=${encodeURIComponent(notification.postId)}`
@@ -15,6 +17,7 @@ function NotificationItem({ notification }: { notification: AppNotification }) {
 }
 
 export default function NotificationsPage() {
+  const { blocks } = useModeration();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   useEffect(() => {
     const refresh = () => setNotifications(readNotifications());
@@ -26,6 +29,7 @@ export default function NotificationsPage() {
     markNotificationsRead();
     setNotifications(readNotifications());
   }
-  const unreadCount = notifications.filter(notification => !notification.read).length;
-  return <AppShell><main className="mx-auto max-w-2xl px-5 pb-32 pt-10 lg:px-10"><Link href="/" className="inline-flex items-center gap-1 text-sm font-semibold text-teal-700 dark:text-teal-300"><ArrowLeft size={16} /> Back to today</Link><div className="mt-8 flex items-end justify-between gap-4"><div><p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-teal-700 dark:text-teal-300"><Bell size={15} /> Your activity</p><h1 className="mt-2 text-4xl font-black tracking-tight">Notifications</h1></div>{unreadCount > 0 && <button type="button" onClick={markRead} className="text-xs font-semibold text-teal-700 underline dark:text-teal-300">Mark all read</button>}</div><section className="mt-8 overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800">{notifications.length ? notifications.map(notification => <NotificationItem key={notification.id} notification={notification} />) : <div className="p-10 text-center"><Bell size={24} className="mx-auto text-neutral-300" /><p className="mt-3 text-sm text-neutral-500">No notifications yet.</p></div>}</section></main></AppShell>;
+  const visibleNotifications = notifications.filter(notification => !isBlocked(blocks, notification.actor.username));
+  const unreadCount = visibleNotifications.filter(notification => !notification.read).length;
+  return <AppShell><main className="mx-auto max-w-2xl px-5 pb-32 pt-10 lg:px-10"><Link href="/" className="inline-flex items-center gap-1 text-sm font-semibold text-teal-700 dark:text-teal-300"><ArrowLeft size={16} /> Back to today</Link><div className="mt-8 flex items-end justify-between gap-4"><div><p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-teal-700 dark:text-teal-300"><Bell size={15} /> Your activity</p><h1 className="mt-2 text-4xl font-black tracking-tight">Notifications</h1></div>{unreadCount > 0 && <button type="button" onClick={markRead} className="text-xs font-semibold text-teal-700 underline dark:text-teal-300">Mark all read</button>}</div><section className="mt-8 overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800">{visibleNotifications.length ? visibleNotifications.map(notification => <NotificationItem key={notification.id} notification={notification} />) : <div className="p-10 text-center"><Bell size={24} className="mx-auto text-neutral-300" /><p className="mt-3 text-sm text-neutral-500">No notifications yet.</p></div>}</section></main></AppShell>;
 }

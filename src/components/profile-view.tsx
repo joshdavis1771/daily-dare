@@ -23,6 +23,9 @@ import { useCurrentTime, useDemoHistory } from "@/lib/plus-tools";
 import { usePlus } from "@/lib/plus-store";
 import { demoProfiles } from "@/lib/demo-data";
 
+import { isBlocked, useModeration } from "@/lib/moderation";
+import { SafetyControls } from "./safety-controls";
+
 const profileStorageKey = "daily-dare-profile";
 const profileUpdatedEvent = "daily-dare-profile-updated";
 
@@ -109,6 +112,8 @@ export function ProfileView({
   editable?: boolean;
   initialPostId?: string;
 }) {
+  const { blocks } = useModeration();
+  const blocked = isBlocked(blocks, profile.id);
   const savedProfile = useSyncExternalStore(
     editable ? subscribeSavedProfile : subscribeNothing,
     editable ? readSavedProfile : readNoSavedProfile,
@@ -206,8 +211,11 @@ export function ProfileView({
   const mutualFollow = Boolean(profile.isFollowing && following);
   const isPlusMember = editable ? plusState.enabled : Boolean(profile.isPlus);
 
+  if (blocked && !editable) return <div className="mx-auto max-w-4xl px-5 py-10"><h1 className="text-xl font-bold">@{profile.username} is blocked</h1><p className="mt-2 text-sm">Unblock this account to view their profile.</p><SafetyControls target={{ userId: profile.id, username: profile.username }} /></div>;
+
   return (
     <div className="mx-auto max-w-4xl px-4 pb-32 pt-6 sm:px-8 sm:pt-10">
+      {!editable && <SafetyControls target={{ userId: profile.id, username: profile.username }} />}
       {editing && profileError && (
         <p
           role="alert"
